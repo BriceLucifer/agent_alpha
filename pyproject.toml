@@ -1,0 +1,7 @@
+[project]
+name = "agent-alpha"
+version = "0.1.0"
+description = "在jetsonnx上，本地或者调用api，实现对话功能，唤醒功能，多轮对话，学习知识库之后回答功能"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []

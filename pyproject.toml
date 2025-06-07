@@ -4,4 +4,23 @@ version = "0.1.0"
 description = "在jetsonnx上，本地或者调用api，实现对话功能，唤醒功能，多轮对话，学习知识库之后回答功能"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "dashscope>=1.23.1",
+    "edge-tts>=7.0.1",
+    "mcp>=1.6.0",
+    "numpy>=2.2.5",
+    "openai>=1.75.0",
+    "opencv-python>=4.11.0.86",
+    "pip>=25.0.1",
+    "pyaudio>=0.2.14",
+    "requests>=2.32.3",
+    "setuptools-rust>=1.11.1",
+    "torch>=2.7.0",
+    "torchaudio>=2.7.0",
+    "tqdm>=4.67.1",
+    "webrtcvad>=2.0.10",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true

@@ -1,6 +1,6 @@
-def main():
-    print("Hello from agent-alpha!")
-
+# main.py
+from fun_call import func_call_main
+import asyncio
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(func_call_main())

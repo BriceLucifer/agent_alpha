@@ -90,7 +90,7 @@ class KnowledgeBase:
     async def search_documents(
         self,
         query: str,
-        n_results: int = 5,
+        n_results: int = 5,  # 正确的参数名是n_results，不是top_k
         where: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """

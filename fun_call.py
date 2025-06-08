@@ -111,6 +111,7 @@ class MCPClient:
             self.conversation_history.append({"role": "user", "content": query})
             
             # 检查知识库
+            # 错误的代码（第114行）
             kb_results = await self.knowledge_base.search_documents(query, top_k=3)
             
             # 构建系统提示
@@ -279,32 +280,32 @@ class MCPClient:
         """清理资源"""
         await self.exit_stack.aclose()
 
-# 主函数
-async def func_call_main():
-    if len(sys.argv) < 2:
-        print("用法: python fun_call.py <mcp_server_script> [mode]")
-        print("mode: voice (语音模式) 或 text (文本模式，默认)")
-        return
-    
-    server_script = sys.argv[1]
-    mode = sys.argv[2] if len(sys.argv) > 2 else "text"
-    
-    client = MCPClient()
-    
-    try:
-        # 连接到MCP服务
-        await client.connect_to_server(server_script)
-        
-        # 根据模式启动交互
-        if mode.lower() == "voice":
-            await client.start_voice_interaction()
-        else:
-            await client.text_interaction()
+        # 主函数
+        async def func_call_main():
+            if len(sys.argv) < 2:
+                print("用法: python fun_call.py <mcp_server_script> [mode]")
+                print("mode: voice (语音模式) 或 text (文本模式，默认)")
+                return
             
-    except Exception as e:
-        print(f"❌ 错误: {e}")
-    finally:
-        await client.cleanup()
-
-if __name__ == "__main__":
-    asyncio.run(func_call_main())
+            server_script = sys.argv[1]
+            mode = sys.argv[2] if len(sys.argv) > 2 else "text"
+            
+            client = MCPClient()
+            
+            try:
+                # 连接到MCP服务
+                await client.connect_to_server(server_script)
+                
+                # 根据模式启动交互
+                if mode.lower() == "voice":
+                    await client.start_voice_interaction()
+                else:
+                    await client.text_interaction()
+                    
+            except Exception as e:
+                print(f"❌ 错误: {e}")
+            finally:
+                await client.cleanup()
+    
+        if __name__ == "__main__":
+            asyncio.run(func_call_main())

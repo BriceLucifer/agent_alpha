@@ -33,10 +33,11 @@ async def main():
         
         # 启动对应模式
         if mode == "voice":
+            # 使用修改后的语音模式（无唤醒词）
             await controller.start_voice_mode()
         else:
             await controller.start_text_mode()
-            
+        
     except Exception as e:
         print(f"❌ 系统错误: {e}")
     finally:

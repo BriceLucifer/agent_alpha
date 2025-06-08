@@ -9,8 +9,9 @@ from contextlib import AsyncExitStack
 from fun_call import MCPClient
 from stt import SpeechToText
 from tts import tts_play
-from wake_word import WakeWordDetector
-from advanced_wake_word import AdvancedWakeWordDetector  # 移到这里
+# 删除唤醒词相关导入
+# from wake_word import WakeWordDetector
+# from advanced_wake_word import AdvancedWakeWordDetector
 from knowledge_base import KnowledgeBase
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -21,7 +22,7 @@ load_dotenv()
 class AgentController:
     """
     智能助手主控制器
-    融合所有功能：对话、唤醒、多轮对话、知识库、Agent角色扮演
+    融合功能：多轮对话、语音识别、知识库、Agent角色扮演
     """
     
     def __init__(self):
@@ -32,11 +33,7 @@ class AgentController:
         # 核心组件
         self.mcp_client = MCPClient()
         self.stt_service = SpeechToText()
-        self.wake_detector = AdvancedWakeWordDetector(
-            wake_words=["小助手", "你好助手", "嘿助手", "智能助手"],
-            volume_threshold=0.02,
-            confidence_threshold=0.7
-        )
+        # 删除唤醒词检测器
         self.knowledge_base = KnowledgeBase()
         
         # OpenAI客户端
@@ -55,7 +52,7 @@ class AgentController:
         
         # 系统状态
         self.is_active = False
-        self.wake_detector.set_wake_callback(self.handle_wake_event)
+        # 删除唤醒词回调设置
         
         self.logger.info("智能助手控制器初始化完成")
     
@@ -242,10 +239,11 @@ class AgentController:
             self.logger.error(f"知识学习失败: {e}")
             return "抱歉，学习过程中出现了错误。"
     
-    async def _get_knowledge_context(self, query: str) -> List[Dict]:
-        """获取相关知识上下文"""
+    async def _get_knowledge_context(self, query: str) -> str:
+        """获取知识库相关上下文"""
         try:
-            results = await self.knowledge_base.search_documents(query, top_k=3)
+            # 修复参数名：top_k -> n_results
+            results = await self.knowledge_base.search_documents(query, n_results=3)
             return results
         except Exception as e:
             self.logger.error(f"知识库搜索失败: {e}")
@@ -387,11 +385,50 @@ class AgentController:
         return final_response.choices[0].message.content
     
     async def start_voice_mode(self):
-        """启动语音模式"""
+        """启动语音模式 - 直接语音识别的多轮对话"""
         self.logger.info("启动语音交互模式")
         print("🎙️ 语音模式已启动")
-        print("💡 说出唤醒词开始对话，按 Ctrl+C 退出")
+        print("💡 直接说话开始对话，按 Ctrl+C 退出")
+        print(f"🤖 当前角色: {self.agent_roles[self.current_role]['name']}")
         
+        try:
+            while self.is_active:
+                try:
+                    print("\n🎤 请说话...")
+                    
+                    # 直接进行语音识别，无需唤醒词
+                    user_input = await self.stt_service.listen_and_recognize(timeout=10.0)
+                    
+                    if user_input and user_input.strip():
+                        print(f"👤 您说: {user_input}")
+                        
+                        # 检查退出命令
+                        if user_input.lower() in ['退出', '再见', 'quit', 'exit']:
+                            await tts_play("再见！")
+                            break
+                        
+                        print("🤖 思考中...")
+                        response = await self.process_user_input(user_input, mode="voice")
+                        
+                        if response:
+                            print(f"🤖 {self.agent_roles[self.current_role]['name']}: {response}")
+                            await tts_play(response)
+                        else:
+                            await tts_play("抱歉，我无法处理您的请求")
+                    else:
+                        print("⚠️ 未识别到有效输入，请重试")
+                        
+                except asyncio.TimeoutError:
+                    print("⏰ 语音识别超时，请重试")
+                except Exception as e:
+                    print(f"❌ 错误: {e}")
+                    await asyncio.sleep(1)
+                    
+                except KeyboardInterrupt:
+                    print("\n👋 退出语音模式")
+        finally:
+                print("🔚 语音模式已结束")
+    
         self.wake_detector.start_listening()
         
         try:
@@ -433,7 +470,7 @@ class AgentController:
     async def cleanup(self):
         """清理资源"""
         self.is_active = False
-        self.wake_detector.stop_listening()
+        # 删除唤醒词检测器的停止调用
         await self.mcp_client.cleanup()
         self.logger.info("系统已清理")
 

@@ -1,5 +1,6 @@
 # main.py
-from fun_call import func_call_main
+# 删除这行导入
+# from fun_call import func_call_main
 import asyncio
 import sys
 from agent_controller import AgentController
@@ -44,5 +45,5 @@ async def main():
         await controller.cleanup()
 
 if __name__ == "__main__":
-    # 只执行一个主函数
-    asyncio.run(main())  # 或者 asyncio.run(func_call_main())
+    # 只执行主函数
+    asyncio.run(main())

@@ -17,7 +17,6 @@ import os
 # 本地服务导入
 import tts
 import stt
-from wake_word import WakeWordDetector
 from knowledge_base import KnowledgeBase
 
 load_dotenv()
@@ -34,7 +33,7 @@ class MCPClient:
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         
-        # 使用 DeepSeek API 配置（删除重复配置）
+        # 使用 DeepSeek API 配置
         self.llm_client = OpenAI(
             api_key=os.getenv("DEEPSEEK_API_KEY"),
             base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -43,14 +42,10 @@ class MCPClient:
         
         # 本地服务初始化
         self.stt_service = stt.SpeechToText()
-        self.wake_detector = WakeWordDetector()
         self.knowledge_base = KnowledgeBase()
         
         # 对话历史
         self.conversation_history = []
-        
-        # 设置唤醒回调
-        self.wake_detector.set_wake_callback(self.handle_wake_word)
     
     async def connect_to_server(self, server_script_path: str):
         """连接到MCP服务"""
@@ -82,28 +77,6 @@ class MCPClient:
         
         print(f"✅ 已连接到 MCP 服务: {server_script_path}")
     
-    async def handle_wake_word(self):
-        """处理唤醒词检测"""
-        print("🎤 检测到唤醒词，开始监听...")
-        
-        # 播放提示音
-        await tts.tts_play("我在听，请说话")
-        
-        # 开始语音识别
-        user_input = await self.stt_service.listen_and_recognize(timeout=10.0)
-        
-        if user_input:
-            print(f"👤 用户说: {user_input}")
-            
-            # 处理用户查询
-            response = await self.process_query(user_input)
-            
-            # 播放回答
-            if response:
-                await tts.tts_play(response)
-        else:
-            await tts.tts_play("抱歉，我没有听清楚")
-    
     async def process_query(self, query: str) -> str:
         """处理用户查询"""
         try:
@@ -111,7 +84,6 @@ class MCPClient:
             self.conversation_history.append({"role": "user", "content": query})
             
             # 检查知识库
-            # 错误的代码（第114行）
             kb_results = await self.knowledge_base.search_documents(query, top_k=3)
             
             # 构建系统提示
@@ -233,22 +205,37 @@ class MCPClient:
         
         return final_response.choices[0].message.content
     
-    async def start_voice_interaction(self):
-        """启动语音交互模式"""
-        print("🎙️ 启动语音交互模式...")
-        print("💡 说出唤醒词开始对话，按 Ctrl+C 退出")
-        
-        # 启动唤醒词检测
-        self.wake_detector.start_listening()
+    async def start_voice_chat(self):
+        """启动语音聊天模式 - 直接语音识别多轮对话"""
+        print("🎙️ 语音聊天模式启动")
+        print("💡 直接说话开始对话，说'退出'结束")
         
         try:
-            # 保持运行
             while True:
-                await asyncio.sleep(1)
+                print("\n🎤 请说话...")
+                
+                # 直接语音识别
+                user_input = await self.stt_service.listen_and_recognize(timeout=10.0)
+                
+                if user_input:
+                    print(f"👤 您说: {user_input}")
+                    
+                    # 检查退出命令
+                    if user_input.lower() in ['退出', '再见', 'quit', 'exit']:
+                        await tts.tts_play("再见！")
+                        break
+                    
+                    # 处理查询
+                    response = await self.process_query(user_input)
+                    
+                    if response:
+                        print(f"🤖 助手: {response}")
+                        await tts.tts_play(response)
+                else:
+                    print("⚠️ 未识别到语音，请重试")
+                    
         except KeyboardInterrupt:
-            print("\n👋 退出语音交互模式")
-        finally:
-            self.wake_detector.stop_listening()
+            print("\n👋 退出语音模式")
     
     async def text_interaction(self):
         """文本交互模式"""
@@ -279,33 +266,34 @@ class MCPClient:
     async def cleanup(self):
         """清理资源"""
         await self.exit_stack.aclose()
+        print("🧹 资源已清理")
 
-        # 主函数
-        async def func_call_main():
-            if len(sys.argv) < 2:
-                print("用法: python fun_call.py <mcp_server_script> [mode]")
-                print("mode: voice (语音模式) 或 text (文本模式，默认)")
-                return
-            
-            server_script = sys.argv[1]
-            mode = sys.argv[2] if len(sys.argv) > 2 else "text"
-            
-            client = MCPClient()
-            
-            try:
-                # 连接到MCP服务
-                await client.connect_to_server(server_script)
-                
-                # 根据模式启动交互
-                if mode.lower() == "voice":
-                    await client.start_voice_interaction()
-                else:
-                    await client.text_interaction()
-                    
-            except Exception as e:
-                print(f"❌ 错误: {e}")
-            finally:
-                await client.cleanup()
+# 主函数
+async def func_call_main():
+    if len(sys.argv) < 2:
+        print("用法: python fun_call.py <mcp_server_script> [mode]")
+        print("mode: voice (语音模式) 或 text (文本模式，默认)")
+        return
     
-        if __name__ == "__main__":
-            asyncio.run(func_call_main())
+    server_script = sys.argv[1]
+    mode = sys.argv[2] if len(sys.argv) > 2 else "text"
+    
+    client = MCPClient()
+    
+    try:
+        # 连接到MCP服务
+        await client.connect_to_server(server_script)
+        
+        # 根据模式启动交互
+        if mode.lower() == "voice":
+            await client.start_voice_chat()
+        else:
+            await client.text_interaction()
+            
+    except Exception as e:
+        print(f"❌ 错误: {e}")
+    finally:
+        await client.cleanup()
+
+if __name__ == "__main__":
+    asyncio.run(func_call_main())

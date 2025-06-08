@@ -10,8 +10,6 @@ from fun_call import MCPClient
 from stt import SpeechToText
 from tts import tts_play
 # 删除唤醒词相关导入
-# from wake_word import WakeWordDetector
-# from advanced_wake_word import AdvancedWakeWordDetector
 from knowledge_base import KnowledgeBase
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -52,7 +50,6 @@ class AgentController:
         
         # 系统状态
         self.is_active = False
-        # 删除唤醒词回调设置
         
         self.logger.info("智能助手控制器初始化完成")
     
@@ -424,10 +421,10 @@ class AgentController:
                     print(f"❌ 错误: {e}")
                     await asyncio.sleep(1)
                     
-                except KeyboardInterrupt:
-                    print("\n👋 退出语音模式")
+        except KeyboardInterrupt:
+            print("\n👋 退出语音模式")
         finally:
-                print("🔚 语音模式已结束")
+            print("🔚 语音模式已结束")
     
         self.wake_detector.start_listening()
         
@@ -470,7 +467,6 @@ class AgentController:
     async def cleanup(self):
         """清理资源"""
         self.is_active = False
-        # 删除唤醒词检测器的停止调用
         await self.mcp_client.cleanup()
         self.logger.info("系统已清理")
 
